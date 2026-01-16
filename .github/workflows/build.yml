@@ -1,31 +1,41 @@
-name: Build APK (debug)
+name: Build APK (Buildozer on runner)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROIDSDK: ${{ runner.temp }}/android-sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-11-jdk zlib1g-dev \
+            libncurses5 libstdc++6 libffi-dev libssl-dev python3-pip
 
-      - name: Run Buildozer (build debug APK)
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
-        with:
-          workdir: '.'
-          buildozer_command: 'android debug' 
+      - name: Install Python tools
+        run: |
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install cython virtualenv buildozer
+
+      - name: Prepare Android SDK (Buildozer will download NDK/SDK as needed)
+        run: |
+          mkdir -p $ANDROIDSDK
+          # optional: set ANDROIDSDK env var for buildozer if needed
+
+      - name: Run Buildozer (debug)
+        run: |
+          # ensure buildozer.spec is present in repo root
+          buildozer -v android debug
+        working-directory: ${{ github.workspace }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: apk-debug
+          name: apk
           path: bin/*.apk
