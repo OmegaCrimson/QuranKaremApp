@@ -1,13 +1,20 @@
 name: Build and Release APK
 
 on:
-  workflow_dispatch:      # Allows manual triggering
+  # 1. Allow manual trigger with a version input
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version Tag (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+  # 2. Keep trigger on tag push (optional, but good to keep)
   push:
     tags:
-      - 'v*'              # Triggers when you push a tag like v1.0, v2.3, etc.
+      - 'v*'
 
 permissions:
-  contents: write         # Required to create the release and upload files
+  contents: write
 
 jobs:
   build:
@@ -39,13 +46,11 @@ jobs:
       - name: Install Buildozer and Dependencies
         run: |
           pip install --upgrade pip
-          # Pin Cython to <3.0 for Kivy compatibility
           pip install "Cython<3.0"
           pip install buildozer
 
       - name: Build APK
         run: |
-          # The 'yes' command accepts the Android SDK license agreements automatically
           yes | buildozer android debug
         working-directory: ${{ github.workspace }}
 
@@ -57,7 +62,13 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')  # Only release if a tag was pushed
+        # Run if it's a tag push OR a manual dispatch
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
+          # If manual, use the input. If tag push, use the tag name.
+          tag_name: ${{ inputs.version_tag || github.ref_name }}
+          name: Release ${{ inputs.version_tag || github.ref_name }}
           files: bin/*.apk
+          draft: false
+          prerelease: false
           generate_release_notes: true
