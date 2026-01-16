@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROIDSDK: ${{ runner.temp }}/android-sdk
+      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -15,24 +16,35 @@ jobs:
       - name: Install system packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-11-jdk zlib1g-dev \
-            libncurses5 libstdc++6 libffi-dev libssl-dev python3-pip
+          sudo apt-get install -y \
+            git zip unzip openjdk-11-jdk build-essential autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libstdc++6 libffi-dev libssl-dev libsqlite3-dev \
+            libbz2-dev liblzma-dev libgdbm-dev libreadline-dev python3-pip
 
       - name: Install Python tools
         run: |
           python3 -m pip install --upgrade pip setuptools wheel
           python3 -m pip install cython virtualenv buildozer
 
-      - name: Prepare Android SDK (Buildozer will download NDK/SDK as needed)
+      - name: Show environment (debug)
         run: |
-          mkdir -p $ANDROIDSDK
-          # optional: set ANDROIDSDK env var for buildozer if needed
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+          python3 --version
+          pip show buildozer || true
 
       - name: Run Buildozer (debug)
         run: |
           # ensure buildozer.spec is present in repo root
           buildozer -v android debug
         working-directory: ${{ github.workspace }}
+        timeout-minutes: 60
+
+      - name: List build outputs (debug)
+        run: |
+          echo "Listing project bin/ and ./.buildozer directories"
+          ls -la bin || true
+          ls -la .buildozer || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
