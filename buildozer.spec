@@ -1,22 +1,40 @@
 [app]
-# App identity
+
+# (str) Title of your application
 title = MyHTMLApp
+
+# (str) Package name
 package.name = myhtmlapp
+
+# (str) Package domain (needed for android/ios packaging)
 package.domain = org.example
 
-# Source
-source.include_exts = py,html,css,js
-# If your code is in subfolders, set source.dir accordingly (default is project root)
-# source.dir = .
+# (str) Source code where the main.py live
+source.dir = .
 
-# Requirements
+# (str) Source code filename (let's keep it simple)
+source.include_exts = py,html,css,js
+
+# (str) Application versioning (method 1)
+version = 0.1
+
+# (list) Application requirements
 requirements = python3,kivy,pyjnius
 
-# Permissions
-android.permissions = INTERNET
-
-# Orientation and other settings
+# (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
 
-# (Optional) icon and presplash can be added here
-# icon.filename = %(source.dir)s/icon.png
+# (list) Permissions
+android.permissions = INTERNET
+
+# (int) Target Android API, should be as high as possible (currently 34)
+android.api = 34
+
+# (int) Minimum API your APK will support.
+android.minapi = 24
+
+# (bool) Indicate if the application should be fullscreen or not
+fullscreen = 1
+
+# (list) List of service to declare
+# services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
