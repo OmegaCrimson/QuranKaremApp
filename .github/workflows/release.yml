@@ -1,0 +1,53 @@
+name: Build and Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'   # push a tag like v1.0.0 to trigger release
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Build with Buildozer (release)
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          workdir: '.'
+          # For a release build you may want to run 'android release' and sign the APK.
+          # This example builds a debug APK for simplicity; change to 'android release' and configure signing.
+          buildozer_command: 'android debug'
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-release
+          path: bin/*.apk
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: Automated release from CI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v1
+        if: always()
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: bin/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
