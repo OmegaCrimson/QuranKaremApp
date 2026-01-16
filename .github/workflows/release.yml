@@ -1,53 +1,53 @@
-name: Build and Release APK
+name: Build APK (Buildozer on runner)
 
 on:
-  push:
-    tags:
-      - 'v*'   # push a tag like v1.0.0 to trigger release
+  workflow_dispatch:
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
+    env:
+      ANDROIDSDK: ${{ runner.temp }}/android-sdk
+      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip openjdk-11-jdk build-essential autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libstdc++6 libffi-dev libssl-dev libsqlite3-dev \
+            libbz2-dev liblzma-dev libgdbm-dev libreadline-dev python3-pip
 
-      - name: Build with Buildozer (release)
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
-        with:
-          workdir: '.'
-          # For a release build you may want to run 'android release' and sign the APK.
-          # This example builds a debug APK for simplicity; change to 'android release' and configure signing.
-          buildozer_command: 'android debug'
+      - name: Install Python tools
+        run: |
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install cython virtualenv buildozer
 
-      - name: Upload build artifact
+      - name: Show environment (debug)
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+          python3 --version
+          pip show buildozer || true
+
+      - name: Run Buildozer (debug)
+        run: |
+          # ensure buildozer.spec is present in repo root
+          buildozer -v android debug
+        working-directory: ${{ github.workspace }}
+        timeout-minutes: 60
+
+      - name: List build outputs (debug)
+        run: |
+          echo "Listing project bin/ and ./.buildozer directories"
+          ls -la bin || true
+          ls -la .buildozer || true
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: apk-release
+          name: apk
           path: bin/*.apk
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          body: Automated release from CI
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload APK to Release
-        uses: softprops/action-gh-release@v1
-        if: always()
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          files: bin/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
