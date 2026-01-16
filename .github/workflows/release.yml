@@ -1,17 +1,18 @@
-name: Build and Release APK
+[cite_start]name: Build and Release APK [cite: 1]
 
 on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: 'اسم الإصدار (مثلاً v1.0.0)'
+        description: 'Release version (e.g., v1.0.0)'
         required: true
         default: 'v1.0.0'
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    # [cite_start]إضافة الصلاحيات اللازمة لإنشاء الـ Release [cite: 1]
+    [cite_start]runs-on: ubuntu-22.04 [cite: 1]
+    
+    # Required permissions to create a release and upload assets 
     permissions:
       contents: write
 
@@ -32,22 +33,22 @@ jobs:
 
       - name: Install System Dependencies
         run: |
-          [cite_start]sudo apt-get update [cite: 3]
+          sudo apt-get update [cite: 3]
           sudo apt-get install -y \
             build-essential git unzip autoconf libtool pkg-config \
             zlib1g-dev libncurses-dev libncurses5 libstdc++6 \
-            [cite_start]libffi-dev libssl-dev libltdl-dev [cite: 3]
+            libffi-dev libssl-dev libltdl-dev [cite: 3]
 
       - name: Install Buildozer and Dependencies
         run: |
-          [cite_start]pip install --upgrade pip [cite: 4]
-          [cite_start]pip install "Cython<3.0" [cite: 6]
-          [cite_start]pip install buildozer [cite: 6]
+          pip install --upgrade pip [cite: 4]
+          pip install "Cython<3.0" [cite: 6]
+          pip install buildozer [cite: 6]
 
       - name: Build APK
         run: |
-          # [cite_start]قبول التراخيص تلقائياً وبدء البناء [cite: 7]
-          [cite_start]yes | buildozer android debug [cite: 8]
+          # Automatically accept licenses and build [cite: 7]
+          yes | buildozer android debug [cite: 8]
         working-directory: ${{ github.workspace }}
 
       - name: Upload APK artifact
@@ -56,7 +57,6 @@ jobs:
           name: package
           path: bin/*.apk
 
-      # الخطوة الجديدة: رفع الملف إلى GitHub Releases
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
